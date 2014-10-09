@@ -73,9 +73,11 @@
     <Component id="501" name="RCC" path="" type="2"/>
     <Component id="504" name="GPIO" path="" type="2"/>
     <Component id="505" name="EXTI" path="" type="2"/>
+    <Component id="509" name="SPI" path="" type="2"/>
     <Component id="513" name="TIM" path="" type="2"/>
     <Component id="524" name="MISC" path="" type="2"/>
     <Component id="526" name="SYSCFG" path="" type="2"/>
+    <Component id="1156" name="LIS3DSH" path="" type="1"/>
   </Components>
   <Files>
     <File name="cmsis_lib/source/stm32f4xx_gpio.c" path="cmsis_lib/source/stm32f4xx_gpio.c" type="1"/>

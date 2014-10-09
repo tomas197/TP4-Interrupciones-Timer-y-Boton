@@ -7,6 +7,7 @@
 #include "stm32f4xx_syscfg.h"	// configuraciones Generales
 #include "misc.h"				// Vectores de interrupciones (NVIC)
 #include "bsp.h"
+#include "LIS3DSH.h"
 
 #define LED_V GPIO_Pin_12
 #define LED_N GPIO_Pin_13
@@ -42,18 +43,18 @@ uint8_t sw_getState(void) {
 	return GPIO_ReadInputDataBit(GPIOA, BOTON);
 }
 
-void led_setBright(uint8_ led, uint8_ value){
+void led_setBright(uint8_ led, uint8_ value) {
 
 	*leds_pwm[led] = 10000 * value / 100;
 
 }
 
-void bsp_delayMs(uint16_t x){
-   bsp_contMs = x;
+void bsp_delayMs(uint16_t x) {
+	bsp_contMs = x;
 
-		   while(bsp_contMs);
+	while (bsp_contMs)
+		;
 }
-
 
 /**
  * @brief Interrupcion llamada cuando se preciona el pulsador
@@ -74,11 +75,10 @@ void EXTI0_IRQHandler(void) {
  */
 void TIM2_IRQHandler(void) {
 
-
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) != RESET) {
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 		APP_ISR_1ms();
-		if (bsp_contMs){
+		if (bsp_contMs) {
 			bsp_contMs--;
 		}
 
@@ -96,6 +96,26 @@ void bsp_init() {
 	bsp_sw_init();
 	bsp_timer_config();
 
+	LIS3DSH_Init();
+	LIS3DSH_Set_Output(0x47);
+
+}
+
+float bsp_get_acc(char eje) {
+
+	switch (eje) {
+	case 'X';
+	case 'x';
+	return LIS3DSH_Get_X_Out(LIS3DSH_Sense_2g);
+	break;
+	case 'Y';
+	case 'y';
+	return LIS3DSH_Get_Y_Out(LIS3DSH_Sense_2g);
+	case 'Z';
+	case 'z';
+	return LIS3DSH_Get_Z_Out(LIS3DSH_Sense_2g);
+default	-999.9;
+}
 }
 
 /**
@@ -183,18 +203,17 @@ void bsp_timer_config(void) {
 
 }
 
-
 void bsp_pwm_config(void) {
 	TIM_TimeBaseInitTypeDef TIM_config;
 
 	TIM_OCInitTypeDef TIM_OC_config;
 
-
 	GPIO_InitTypeDef GPIO_config;
 
 	GPIO_config.GPIO_Mode = GPIO_Mode_AF;
 
-	GPIO_config.GPIO_Pin = GPIO_pin_15 | GPIO_pin_14 | GPIO_pin_13 | GPIO_pin_12;
+	GPIO_config.GPIO_Pin = GPIO_PinSource15 | GPIO_PinSource14
+			| GPIO_PinSource13 | GPIO_PinSource12;
 
 	GPIO_config.GPIO_Speed = GPIO_Speed_50MHz;
 
@@ -204,10 +223,10 @@ void bsp_pwm_config(void) {
 
 	GPIO_Init(GPIOD, &GPIO_config);
 
-	GPIO_PinAFConfig(GPIOD,GPIO_pin_15,GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD,GPIO_pin_14,GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD,GPIO_pin_13,GPIO_AF_TIM4);
-	GPIO_PinAFConfig(GPIOD,GPIO_pin_12,GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource15, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource14, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource13, GPIO_AF_TIM4);
+	GPIO_PinAFConfig(GPIOD, GPIO_PinSource12, GPIO_AF_TIM4);
 
 	TIM_config.TIM_CounterMode = TIM_CounterMode_Up;
 	TIM_config.TIM_ClockDivision = 0;
@@ -216,20 +235,15 @@ void bsp_pwm_config(void) {
 
 	TIM_TimeBaseInit(TIM4, &TIM_config);
 
-
-
 	TIM_OC_config.TIM_OCMode = TIM_OCMode_PWM1;
 	TIM_OC_config.TIM_OutputState = TIM_OutputState_Enable;
 	TIM_OC_config.TIM_Pulse = 0;
 	TIM_OC_config.TIM_OCNPolarity = TIM_OCPolarity_High;
 
-
 	//CH1 del PWM
 	TIM_OC1Init(TIM4, &TIM_OC_config);
 
 	TIM_OC1PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
-
 
 	//CH2 del PWM
 
@@ -240,31 +254,27 @@ void bsp_pwm_config(void) {
 
 	TIM_OC2PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-
 	//CH3 del PWM
 
-		TIM_OC_config.TIM_OutputState = TIM_OutputState_Enable;
-		TIM_OC_config.TIM_Pulse = 0;
+	TIM_OC_config.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OC_config.TIM_Pulse = 0;
 
-		TIM_OC3Init(TIM4, &TIM_OC_config);
+	TIM_OC3Init(TIM4, &TIM_OC_config);
 
-		TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
-
+	TIM_OC3PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
 	//CH4 del PWM
 
-		TIM_OC_config.TIM_OutputState = TIM_OutputState_Enable;
-		TIM_OC_config.TIM_Pulse = 0;
+	TIM_OC_config.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OC_config.TIM_Pulse = 0;
 
-		TIM_OC4Init(TIM4, &TIM_OC_config);
+	TIM_OC4Init(TIM4, &TIM_OC_config);
 
-		TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
+	TIM_OC4PreloadConfig(TIM4, TIM_OCPreload_Enable);
 
-		TIM_ARRPreloadConfig(TIM4, ENABLE);
+	TIM_ARRPreloadConfig(TIM4, ENABLE);
 
-		TIM_Cmd(TIM4, ENABLE);
-
+	TIM_Cmd(TIM4, ENABLE);
 
 }
-
 
